@@ -8,8 +8,6 @@ class Config(BaseSettings):
 
     DB_URL: str
 
-    CLIENT_ORIGIN: str
-
     MAIL_SENDER: str
     MAIL_PASSWORD: str
 
