@@ -19,10 +19,6 @@ class InvalidJwtError(AppException):
     pass
 
 
-class LowRecaptchaScoreError(AppException):
-    pass
-
-
 class WrongCredentialsError(AppException):
     pass
 

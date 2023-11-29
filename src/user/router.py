@@ -31,12 +31,7 @@ async def create_user(
     session: AsyncSession = Depends(_db.get_session),
 ):
     try:
-        token = await _user_service.create_user(data, session, client)
-    except _user_exception.LowRecaptchaScoreError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=e.message,
-        )
+        token = await _user_service.create_user(data, session)
     except _user_exception.UserDataConflictError as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

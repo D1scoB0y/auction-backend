@@ -35,15 +35,7 @@ async def get_token(
 async def create_user(
     data: _user_schemas.RegistrationUser,
     session: AsyncSession,
-    client: AsyncClient,
 ) -> str:
-    r_score = await _google_service.get_recaptcha_score(data.recaptcha_token, client)
-
-    if r_score < config.GOOGLE_RECAPTCHA_MIN_SCORE:
-        raise _user_exception.LowRecaptchaScoreError(
-            f'Recaptcha score is lower than {config.GOOGLE_RECAPTCHA_MIN_SCORE}',
-        )
-
     user_with_same_username = await _user_getters.get_user_by_username(data.username, session)
 
     if user_with_same_username is not None:
@@ -60,7 +52,7 @@ async def create_user(
             'Эта почта уже занята',
         )
 
-    new_user = _user_models.User(**data.model_dump(exclude={'recaptcha_token'}, by_alias=True))
+    new_user = _user_models.User(**data.model_dump(by_alias=True))
     new_user.password = _user_security.hash_password(data.password)
     session.add(new_user)
 

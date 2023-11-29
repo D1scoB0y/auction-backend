@@ -41,7 +41,7 @@ class LoginUser(BaseModel):
 
 
 class RegistrationUser(Username, Email, Password):
-    recaptcha_token: str = Field(default='', alias='recaptchaToken')
+    pass
 
 
 class UpdateUser(Username, Email, PhoneNumber):

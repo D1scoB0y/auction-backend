@@ -13,10 +13,6 @@ class Config(BaseSettings):
     MAIL_SENDER: str
     MAIL_PASSWORD: str
 
-    GOOGLE_RECAPTCHA_KEY_ID: str
-    GOOGLE_RECAPTCHA_SECRET_KEY: str
-    GOOGLE_RECAPTCHA_MIN_SCORE: float
-
     PHONE_SERVICE_API_KEY: str
     PHONE_SERVICE_COMPAIGN_ID: str
 
