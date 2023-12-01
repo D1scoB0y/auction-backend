@@ -8,3 +8,7 @@ celerybeat-schedule
 /.aws
 tests
 scripts
+.env-prod
+run.sh
+stop.sh
+setup.cfg

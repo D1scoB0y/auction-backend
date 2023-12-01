@@ -34,7 +34,7 @@ def _build_email_verification_message(
     body = f'''\
     Здравствуйте, {username}!
     Перейдите по ссылке для подтверджения адреса электронной почты:
-    {config.CLIENT_ORIGIN}/email-verification?token={token}\
+    {config.CLIENT_APP_URL}/email-verification?token={token}\
     '''
 
     return _build_message(subject, body, recipient)
@@ -49,7 +49,7 @@ def _build_reset_password_message(
     body = f'''\
     Здравствуйте, {username}! Вы запросили сброс пароля указав эту почту.
     Пройдите по ссылке и действуйте по инструкции:
-    {config.CLIENT_ORIGIN}/reset-password-step-2?token={token}
+    {config.CLIENT_APP_URL}/reset-password-step-2?token={token}
     Если вы не запрашивали сброс пароля проигнорируйте это сообщение.\
     '''
     return _build_message(subject, body, recipient)
