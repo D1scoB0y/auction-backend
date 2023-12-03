@@ -27,7 +27,6 @@ router = APIRouter(prefix='/auth')
 @_utils.catch_unexpected_errors
 async def create_user(
     data: _user_schemas.RegistrationUser,
-    client: AsyncClient = Depends(_client.get_client),
     session: AsyncSession = Depends(_db.get_session),
 ):
     try:
@@ -256,7 +255,6 @@ async def validate_verification_code(
 )
 @_utils.catch_unexpected_errors
 async def request_password_reset(
-    request: Request,
     email: str,
     session: AsyncSession = Depends(_db.get_session),
 ):

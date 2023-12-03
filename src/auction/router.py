@@ -78,6 +78,26 @@ async def get_lot(lot_id: int, session: AsyncSession = Depends(_db.get_session))
         )
 
 
+@router.post(
+    '/add-to-favorites',
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=['Lots'],
+)
+@_utils.catch_unexpected_errors
+async def add_to_favorites(
+    data: _auction_schemas.AddToFavorites,
+    user: _user_models.User = Depends(_user_utils.get_current_user),
+    session: AsyncSession = Depends(_db.get_session),
+):
+    try:
+        await _auction_service.add_to_favorites(data.lot_id, user, session)
+    except _auction_exception.LotNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=e.message,
+        )
+
+
 @router.get(
     '/ended-lots/{lot_id}',
     status_code=status.HTTP_200_OK,
@@ -104,8 +124,26 @@ async def get_ended_lot(
     tags=['Lots'],
 )
 @_utils.catch_unexpected_errors
-async def get_active_lots(page: int, session: AsyncSession = Depends(_db.get_session)):
-    return await _auction_service.fetch_active_lots(page, session)
+async def get_active_lots(
+    page: int,
+    user: _user_models.User = Depends(_user_utils.get_current_user_or_none),
+    session: AsyncSession = Depends(_db.get_session),
+):
+    return await _auction_service.fetch_active_lots(page, user, session)
+
+
+@router.get(
+    '/favorite-lots',
+    status_code=status.HTTP_200_OK,
+    tags=['Lots'],
+)
+@_utils.catch_unexpected_errors
+async def get_favorite_lots(
+    page: int,
+    user: _user_models.User = Depends(_user_utils.get_current_user),
+    session: AsyncSession = Depends(_db.get_session),
+):
+    return await _auction_service.fetch_favorite_lots(page, user, session)
 
 
 @router.get(

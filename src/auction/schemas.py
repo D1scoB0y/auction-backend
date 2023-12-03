@@ -35,7 +35,7 @@ class CreateLot(BaseModel):
         base_price: Annotated[int, Form(alias='basePrice')],
         end_date: Annotated[dt.datetime, Form(alias='endDate')],
         images: list[UploadFile],
-        description: Annotated[str, Form(max_length=500)] = '',
+        description: Annotated[str, Form(max_length=750)] = '',
     ):
         return CreateLot(
             title=title,
@@ -44,6 +44,10 @@ class CreateLot(BaseModel):
             end_date=end_date,
             images=images,
         )
+
+
+class AddToFavorites(BaseModel):
+    lot_id: int = Field(alias='lotId')
 
 
 class ArchiveLot(BaseModel):
@@ -59,6 +63,7 @@ class PreviewLot(BaseModel):
     current_bid: int = Field(alias='currentBid')
     time_to_end: float = Field(alias='timeToEnd')
     status: str
+    is_in_favorites: bool = Field(alias='isInFavorites')
 
     @staticmethod
     def from_lot(lot: dict):

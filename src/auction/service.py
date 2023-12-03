@@ -38,6 +38,38 @@ async def create_lot(
     await session.commit()
 
 
+async def add_to_favorites(
+    lot_id: int,
+    user: _user_models.User,
+    session: AsyncSession,
+):
+    lot = await _auction_getters.get_lot_by_id(lot_id, session)
+
+    if lot is None:
+        raise _auction_exception.LotNotFoundError('Lot with this id does not exist.')
+
+    already_in_favorites_id = await _auction_getters.get_is_already_in_favorites_id(
+        user.user_id,
+        lot_id,
+        session,
+    )
+
+    orm_favorite_lot = await session.get(_auction_models.FavoriteLot, already_in_favorites_id)
+
+    if already_in_favorites_id:
+        await session.delete(orm_favorite_lot)
+        await session.commit()
+        return
+
+    new_favorite_lot = _auction_models.FavoriteLot(
+        user_id=user.user_id,
+        lot_id=lot['lot_id']
+    )
+
+    session.add(new_favorite_lot)
+    await session.commit()
+
+
 async def archive_lot(
     lot_id: int,
     user: _user_models.User,
@@ -73,18 +105,42 @@ async def fetch_lot(
 
 async def fetch_active_lots(
     page: int,
+    user: _user_models.User | None,
     session: AsyncSession,
 ) -> _auction_schemas.PreviewLotResponse:
-    lots = await _auction_getters.get_active_lots(session)
+    lots = await _auction_getters.get_active_lots(user, session)
 
     lots_qty = await _auction_getters.get_active_lots_qty(session)
 
-    limit = 15
+    limit = 18
     start = (page - 1) * limit
     end = page * limit
 
     lots_previews = list(map(
-        lambda x: _auction_schemas.PreviewLot.from_lot(x),
+        _auction_schemas.PreviewLot.from_lot,
+        lots[start:end],
+    ))
+
+    res = _auction_schemas.PreviewLotResponse(**{'lots_qty': lots_qty, 'lots': lots_previews})
+
+    return res
+
+
+async def fetch_favorite_lots(
+    page: int,
+    user: _user_models.User,
+    session: AsyncSession,
+) -> _auction_schemas.PreviewLotResponse:
+    lots = await _auction_getters.get_favorite_lots(user.user_id, session)
+
+    lots_qty = await _auction_getters.get_favorite_lots_qty(user.user_id, session)
+
+    limit = 18
+    start = (page - 1) * limit
+    end = page * limit
+
+    lots_previews = list(map(
+        _auction_schemas.PreviewLot.from_lot,
         lots[start:end],
     ))
 
@@ -188,7 +244,7 @@ async def fetch_ended_lots(
     lots = await _auction_getters.get_ended_lots(session)
     lots_qty = await _auction_getters.get_ended_lots_qty(session)
 
-    limit = 15
+    limit = 18
     start = (page - 1) * limit
     end = page * limit
 
@@ -251,7 +307,7 @@ async def fetch_archived_lots(
     lots = await _auction_getters.get_archived_lots(session)
     lots_qty = await _auction_getters.get_archived_lots_qty(session)
 
-    limit = 15
+    limit = 18
     start = (page - 1) * limit
     end = page * limit
 

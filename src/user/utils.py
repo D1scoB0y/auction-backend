@@ -8,7 +8,7 @@ import src.user.user_getters as _user_getters
 import src.user.exception as _user_exception
 
 
-oauth2schema = OAuth2PasswordBearer(tokenUrl='/auth/token')
+oauth2schema = OAuth2PasswordBearer(tokenUrl='/auth/token', auto_error=False)
 
 
 async def get_current_user(
@@ -39,3 +39,13 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=e.message,
         )
+
+
+async def get_current_user_or_none(
+    token: str = Depends(oauth2schema),
+    session: AsyncSession = Depends(_db.get_session),
+):
+    try:
+        return await get_current_user(token, session)
+    except Exception:
+        return None

@@ -6,6 +6,8 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
+import src.user.models as _user_models
+
 
 async def get_lot_by_id(
     lot_id: int,
@@ -22,24 +24,61 @@ async def get_lot_by_id(
 
 
 async def get_active_lots(
+    user: _user_models.User | None,
     session: AsyncSession,
 ) -> list[dict]:
-    stmt = text('''
-        select lot_id,
-            title,
-            end_date,
-            current_bid,
-            status,
-            images[1] as image
-        from lots
-        where end_date > now() at time zone 'utc' and status = 'active'
-    ''')
+    if user is None:
+        stmt = text('''
+            select lot_id,
+                title,
+                end_date,
+                current_bid,
+                status,
+                images[1] as image,
+                false as is_in_favorites
+            from lots
+            where end_date > now() at time zone 'utc' and status = 'active'
+        ''')
 
-    lots = await session.execute(stmt)
+        lots = await session.execute(stmt)
+    else:
+        stmt = text('''
+            select l.lot_id,
+                l.title,
+                l.end_date,
+                l.current_bid,
+                l.status,
+                l.images[1] as image,
+                exists(
+                    select fl.record_id
+                    from favorite_lots fl
+                    where fl.user_id = :user_id and fl.lot_id = l.lot_id
+                ) as is_in_favorites
+            from lots l
+            where l.end_date > now() at time zone 'utc' and l.status = 'active'
+        ''')
+
+        lots = await session.execute(stmt, params={'user_id': user.user_id})
 
     res = list(map(lambda x: x._asdict(), lots))
 
     return res
+
+
+async def get_is_already_in_favorites_id(
+    user_id: int,
+    lot_id: int,
+    session: AsyncSession,
+):
+    stmt = text('''
+        select record_id
+        from favorite_lots
+        where user_id = :user_id and lot_id = :lot_id
+    ''')
+
+    res = await session.execute(stmt, params={'user_id': user_id, 'lot_id': lot_id})
+
+    return res.scalar()
 
 
 async def get_active_lots_qty(
@@ -87,6 +126,53 @@ async def get_archived_lots_qty(
     ''')
 
     qty = await session.execute(stmt)
+
+    return qty.scalar_one()
+
+
+async def get_favorite_lots(
+    user_id: int,
+    session: AsyncSession,
+) -> list[dict]:
+    stmt = text('''
+        select l.lot_id,
+            l.title,
+            l.end_date,
+            l.current_bid,
+            l.status,
+            l.images[1] as image,
+            true as is_in_favorites
+        from lots l
+        where end_date > now() at time zone 'utc'
+        and status = 'active'
+        and exists(
+            select record_id
+            from favorite_lots fl
+            where fl.user_id = :user_id and fl.lot_id = l.lot_id
+        )
+    ''')
+
+    lots = await session.execute(stmt, params={'user_id': user_id})
+
+    res = list(map(lambda x: x._asdict(), lots))
+
+    return res
+
+
+async def get_favorite_lots_qty(
+    user_id: int,
+    session: AsyncSession,
+):
+    stmt = text('''
+        select count(fl.record_id)
+        from favorite_lots fl
+        join lots l on l.lot_id = fl.lot_id
+        where l.end_date > now() at time zone 'utc'
+            and l.status = 'active'
+            and fl.user_id = :user_id
+    ''')
+
+    qty = await session.execute(stmt, params={'user_id': user_id})
 
     return qty.scalar_one()
 
