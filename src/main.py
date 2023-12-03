@@ -5,7 +5,7 @@ import src.user.router as _auth_module
 import src.auction.router as _auction_module
 
 
-app = FastAPI(debug=True)
+app = FastAPI(openapi_url='')
 
 app.add_middleware(
     CORSMiddleware,
