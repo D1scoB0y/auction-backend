@@ -6,7 +6,13 @@ class Config(BaseSettings):
 
     SECRET_KEY: str
 
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str
+
     DB_URL: str
+
+    REDIS_URL: str
 
     CLIENT_APP_URL: str
 

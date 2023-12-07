@@ -22,6 +22,8 @@ flake8-bugbear = "^23.9.16"
 flake8-builtins = "^2.1.0"
 alembic = "^1.12.0"
 celery = "^5.3.4"
+prometheus-fastapi-instrumentator = "^6.1.0"
+gunicorn = "^21.2.0"
 flower = "^2.0.1"
 
 [tool.poetry.group.dev.dependencies]

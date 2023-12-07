@@ -1,7 +1,9 @@
 from celery import Celery
 
+from src.config import config 
 
-celery = Celery('tasks', broker='redis://localhost:6379')
+
+celery = Celery('tasks', broker=config.REDIS_URL)
 
 celery.conf.beat_schedule = {
     'update_lot_status_task1': {

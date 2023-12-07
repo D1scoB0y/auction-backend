@@ -1,0 +1,15 @@
+/.git
+/tests
+/system
+/scripts
+/prometheus_data
+.gitignore
+nginx-conf.txt
+poetry.lock
+pyproject.toml
+setup.cfg
+test.env
+.pytest_cache
+celerybeat-schedule
+docker-compose.yml
+prod.env

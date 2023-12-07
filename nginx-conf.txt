@@ -1,0 +1,41 @@
+server {
+    server_name fotojager-backend.ru www.fotojager-backend.ru;
+    return 301 https://fotojager-backend.ru;
+}
+
+server {
+    listen 443 ssl;
+
+    server_name www.fotojager.ru;
+
+    ssl_certificate     /etc/letsencrypt/live/fotojager-backend.ru/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/fotojager-backend.ru/privkey.pem;
+    ssl_dhparam         /etc/letsencrypt/ssl-dhparams.pem;
+
+    return 301 https://fotojager-backend.ru;
+
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl ipv6only=on;
+
+    server_name fotojager-backend.ru www.fotojager-backend.ru;
+
+    ssl_certificate /etc/letsencrypt/live/fotojager-backend.ru/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/fotojager-backend.ru/privkey.pem;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    keepalive_timeout 5;
+    client_max_body_size 4G;
+
+    access_log /home/backend-admin/auction-backend/logs/nginx-access.log;
+    error_log /home/backend-admin/auction-backend/logs/nginx-error.log;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+    }
+
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+}

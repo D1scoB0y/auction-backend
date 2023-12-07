@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  fastapi:
+    container_name: fastapi
+    build:
+      context: .
+    image: fastapi:0.1
+    command: ./run_commands/gunicorn.sh
+    restart: always
+    ports:
+      - 8000:8000
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  db:
+    container_name: postgres
+    image: postgres:14-alpine
+    restart: always
+    healthcheck:
+      test: pg_isready
+      interval: 2s
+      timeout: 6s
+      retries: 120
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+
+  redis:
+    container_name: redis
+    image: redis:7.2-alpine
+    restart: always
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 2s
+      timeout: 6s
+      retries: 120
+    ports:
+      - 6379:6379
+
+  celery-worker:
+    container_name: celery-worker
+    build:
+      context: .
+    image: celery-worker:0.1
+    command: ./run_commands/celery-worker.sh
+    depends_on:
+        db:
+          condition: service_healthy
+        redis:
+          condition: service_healthy
+
+  celery-beat:
+    container_name: celery-beat
+    build:
+      context: .
+    image: celery-beat:0.1
+    command: ./run_commands/celery-beat.sh
+    depends_on:
+        db:
+          condition: service_healthy
+        redis:
+          condition: service_healthy
+
+  flower:
+    container_name: flower
+    build:
+      context: .
+    image: flower:0.1
+    restart: always
+    command: ./run_commands/flower.sh
+    ports:
+      - 5555:5555
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:v2.37.9
+    restart: always
+    ports:
+      - 9090:9090
+    command: "--config.file=/etc/prometheus/prometheus.yml"
+    volumes:
+      - ./prometheus_data/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+  grafana:
+    image: grafana/grafana-oss:10.2.2
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: always
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  grafana_data:
