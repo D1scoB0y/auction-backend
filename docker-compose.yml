@@ -12,8 +12,6 @@ services:
     ports:
       - 80:80
       - 443:433
-    volumes:
-      - ./nginx/nginx-dev:/etc/nginx/conf.d:ro
 
   fastapi:
     container_name: fastapi
