@@ -8,7 +8,7 @@ import src.celery_ as _celery
 context = ssl.create_default_context()
 
 
-@_celery.celery.task
+@_celery.celery.task(soft_time_limit=8, expires=25)
 def send_mail_message(
     recipient: str,
     message_as_string: str,

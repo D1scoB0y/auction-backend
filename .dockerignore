@@ -1,10 +1,8 @@
 /.git
 /tests
 /system
-/scripts
 /prometheus_data
 .gitignore
-nginx-conf.txt
 poetry.lock
 pyproject.toml
 setup.cfg

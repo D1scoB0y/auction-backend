@@ -18,6 +18,6 @@ async def update_lot_status():
         await session.commit()
 
 
-@_celery.celery.task
+@_celery.celery.task(soft_time_limit=8, expires=25)
 def update_lot_status_task():
     asyncio.get_event_loop().run_until_complete(update_lot_status())

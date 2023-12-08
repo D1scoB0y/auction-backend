@@ -5,9 +5,7 @@
 prod.env
 test.env
 celerybeat-schedule
-/.aws
 tests
-scripts
 run.sh
 stop.sh
 setup.cfg
