@@ -11,7 +11,14 @@ services:
     restart: always
     ports:
       - 80:80
-      - 443:433
+      - 443:443
+      - 3000:3000
+      - 5555:5555
+    depends_on:
+      fastapi:
+        condition: service_healthy
+    networks:
+      - backend
 
   fastapi:
     container_name: fastapi
@@ -19,14 +26,21 @@ services:
       context: .
     image: fastapi:0.1
     command: ./run_commands/gunicorn.sh
+    healthcheck:
+      test: ["CMD", "curl", "localhost:8000"]
+      interval: 3s
+      timeout: 6s
+      retries: 120
     restart: always
-    ports:
-      - 8000:8000
+    expose:
+      - 8000
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - backend
 
   db:
     container_name: postgres
@@ -37,36 +51,46 @@ services:
       interval: 2s
       timeout: 6s
       retries: 120
-    ports:
-      - 5432:5432
+    expose:
+      - 5432
     volumes:
       - postgres_data:/var/lib/postgresql/data
     env_file:
       - .env
+    networks:
+      - backend
 
   redis:
     container_name: redis
     image: redis:7.2-alpine
     restart: always
     healthcheck:
-      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
       interval: 2s
       timeout: 6s
       retries: 120
-    ports:
-      - 6379:6379
+    expose:
+      - 6379
+    networks:
+      - backend
 
   celery-worker:
     container_name: celery-worker
     build:
       context: .
+    restart: always
+    healthcheck:
+      test: ["CMD", "celery", "-A", "src.celery_:celery", "inspect", "ping"]
+      interval: 2s
+      timeout: 6s
+      retries: 120
     image: celery-worker:0.1
     command: ./run_commands/celery-worker.sh
     depends_on:
-        db:
-          condition: service_healthy
-        redis:
-          condition: service_healthy
+      fastapi:
+        condition: service_healthy
+    networks:
+      - backend
 
   celery-beat:
     container_name: celery-beat
@@ -75,10 +99,10 @@ services:
     image: celery-beat:0.1
     command: ./run_commands/celery-beat.sh
     depends_on:
-        db:
-          condition: service_healthy
-        redis:
-          condition: service_healthy
+      celery-worker:
+        condition: service_healthy
+    networks:
+      - backend
 
   flower:
     container_name: flower
@@ -87,35 +111,61 @@ services:
     image: flower:0.1
     restart: always
     command: ./run_commands/flower.sh
-    ports:
-      - 5555:5555
+    expose:
+      - 5555
     depends_on:
-      db:
+      celery-worker:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+    networks:
+      - backend
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    expose:
+      - 9100
+    networks:
+      - backend
 
   prometheus:
     container_name: prometheus
     image: prom/prometheus:v2.37.9
     restart: always
-    ports:
-      - 9090:9090
+    expose:
+      - 9090
     command: "--config.file=/etc/prometheus/prometheus.yml"
     volumes:
       - ./prometheus_data/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
+    networks:
+      - backend
 
   grafana:
     image: grafana/grafana-oss:10.2.2
     container_name: grafana
-    ports:
-      - "3000:3000"
+    expose:
+      - 3000
     volumes:
       - grafana_data:/var/lib/grafana
     restart: always
+    networks:
+      - backend
 
 volumes:
   postgres_data:
   prometheus_data:
   grafana_data:
+
+networks:
+  backend:
+    driver: bridge

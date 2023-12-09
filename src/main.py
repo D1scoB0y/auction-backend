@@ -12,7 +12,6 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         'http://localhost:5173',
-        'https://www.fotojager.ru',
         'https://fotojager.ru',
         'localhost:9090',
     ],
@@ -25,3 +24,7 @@ app.include_router(_auth_module.router)
 app.include_router(_auction_module.router)
 
 Instrumentator().instrument(app).expose(app)
+
+@app.get('/')
+async def default():
+    return {'message': 'OK'}

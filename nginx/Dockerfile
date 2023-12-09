@@ -4,8 +4,13 @@ ARG configdir
 
 VOLUME ./$configdir:/etc/nginx/conf.d:ro
 
+RUN rm /etc/nginx/nginx.conf
+COPY nginx.conf /etc/nginx/nginx.conf
+
 RUN rm /etc/nginx/conf.d/default.conf
-COPY $configdir/nginx*.conf /etc/nginx/conf.d/default.conf
+COPY $configdir/default.conf /etc/nginx/conf.d/default.conf
+
+COPY monitoring.conf /etc/nginx/conf.d/monitoring.conf
 
 VOLUME /etc/letsencrypt:/etc/letsencrypt:ro
 
