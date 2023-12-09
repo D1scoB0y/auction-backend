@@ -12,6 +12,4 @@ COPY $configdir/default.conf /etc/nginx/conf.d/default.conf
 
 COPY monitoring.conf /etc/nginx/conf.d/monitoring.conf
 
-VOLUME /etc/letsencrypt:/etc/letsencrypt:ro
-
 CMD ["nginx", "-g", "daemon off;"]

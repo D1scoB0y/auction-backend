@@ -1,7 +1,7 @@
 /.git
 /tests
-/system
 /prometheus_data
+**/__pycache__
 .gitignore
 poetry.lock
 pyproject.toml
