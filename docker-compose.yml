@@ -30,16 +30,13 @@ services:
     command: ./run_commands/gunicorn.sh
     healthcheck:
       test: ["CMD", "curl", "localhost:8000"]
-      interval: 3s
-      timeout: 6s
-      retries: 120
+      interval: 5s
+      timeout: 5s
     restart: always
     expose:
       - 8000
     depends_on:
       db:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     networks:
       - backend
@@ -50,9 +47,8 @@ services:
     restart: always
     healthcheck:
       test: pg_isready
-      interval: 2s
-      timeout: 6s
-      retries: 120
+      interval: 5s
+      timeout: 10s
     expose:
       - 5432
     volumes:
@@ -68,9 +64,10 @@ services:
     restart: always
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 2s
-      timeout: 6s
-      retries: 120
+      interval: 1m
+      timeout: 5s
+      start_period: 30s
+      start_interval: 2s
     expose:
       - 6379
     networks:
@@ -81,16 +78,8 @@ services:
     build:
       context: .
     restart: always
-    healthcheck:
-      test: ["CMD", "celery", "-A", "src.celery_:celery", "inspect", "ping"]
-      interval: 2s
-      timeout: 6s
-      retries: 120
     image: celery-worker:0.1
     command: ./run_commands/celery-worker.sh
-    depends_on:
-      fastapi:
-        condition: service_healthy
     networks:
       - backend
 
@@ -100,9 +89,6 @@ services:
       context: .
     image: celery-beat:0.1
     command: ./run_commands/celery-beat.sh
-    depends_on:
-      celery-worker:
-        condition: service_healthy
     networks:
       - backend
 
@@ -115,9 +101,6 @@ services:
     command: ./run_commands/flower.sh
     expose:
       - 5555
-    depends_on:
-      celery-worker:
-        condition: service_healthy
     networks:
       - backend
 
