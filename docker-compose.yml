@@ -12,13 +12,13 @@ services:
     ports:
       - 80:80
       - 443:443
-      - 3000:3000
-      - 5555:5555
+    expose:
+      - 9200
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
+      - nginx_logs:/var/log/nginx
     depends_on:
-      fastapi:
-        condition: service_healthy
+      - fastapi
     networks:
       - backend
 
@@ -30,7 +30,7 @@ services:
     command: ./run_commands/gunicorn.sh
     healthcheck:
       test: ["CMD", "curl", "localhost:8000"]
-      interval: 5s
+      interval: 1m
       timeout: 5s
     restart: always
     expose:
@@ -47,8 +47,8 @@ services:
     restart: always
     healthcheck:
       test: pg_isready
-      interval: 5s
-      timeout: 10s
+      interval: 3s
+      timeout: 6s
     expose:
       - 5432
     volumes:
@@ -66,8 +66,6 @@ services:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
       interval: 1m
       timeout: 5s
-      start_period: 30s
-      start_interval: 2s
     expose:
       - 6379
     networks:
@@ -80,6 +78,8 @@ services:
     restart: always
     image: celery-worker:0.1
     command: ./run_commands/celery-worker.sh
+    depends_on:
+      - redis
     networks:
       - backend
 
@@ -89,6 +89,8 @@ services:
       context: .
     image: celery-beat:0.1
     command: ./run_commands/celery-beat.sh
+    depends_on:
+      - celery-worker
     networks:
       - backend
 
@@ -99,8 +101,8 @@ services:
     image: flower:0.1
     restart: always
     command: ./run_commands/flower.sh
-    expose:
-      - 5555
+    ports:
+      - 5555:5555
     networks:
       - backend
 
@@ -122,15 +124,47 @@ services:
     networks:
       - backend
 
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    expose:
+      - 8080
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    depends_on:
+      - redis
+    networks:
+      - backend
+
+  nginx-exporter:
+    container_name: nginx-exporter
+    build: ./nginx/exporter
+    image: nginx-exporter:0.1
+    command:
+      - --target.host=nginx
+      - --target.port=9200
+      - --target.log=/var/log/nginx/monitor.log
+    expose:
+      - 9150
+    volumes:
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - nginx
+    networks:
+      - backend
+
   prometheus:
     container_name: prometheus
     image: prom/prometheus:v2.37.9
     restart: always
-    expose:
-      - 9090
+    ports:
+      - 9090:9090
     command: "--config.file=/etc/prometheus/prometheus.yml"
     volumes:
-      - ./prometheus_data/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     networks:
       - backend
@@ -138,8 +172,8 @@ services:
   grafana:
     image: grafana/grafana-oss:10.2.2
     container_name: grafana
-    expose:
-      - 3000
+    ports:
+      - 3000:3000
     volumes:
       - grafana_data:/var/lib/grafana
     restart: always
@@ -147,6 +181,7 @@ services:
       - backend
 
 volumes:
+  nginx_logs:
   postgres_data:
   prometheus_data:
   grafana_data:
