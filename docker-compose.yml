@@ -162,7 +162,9 @@ services:
     restart: always
     ports:
       - 9090:9090
-    command: "--config.file=/etc/prometheus/prometheus.yml"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=3d
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus

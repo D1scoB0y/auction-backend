@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"strings"
 	"strconv"
 	"time"
 
@@ -48,6 +49,53 @@ func NewMetrics(reg prometheus.Registerer) *metrics {
 	}
 	reg.MustRegister(m.size, m.requests, m.duration)
 	return m
+}
+
+func normalizeURL(inputURL string) string {
+	parts := strings.Split(inputURL, "?")
+	baseURL := parts[0]
+
+	re := regexp.MustCompile(`/\d+|/\d+/\d+/`)
+	normalizedURL := re.ReplaceAllString(baseURL, "/{id}")
+
+	return normalizedURL
+}
+
+func tailAccessLogFile(m *metrics, path string) {
+	t, err := tail.TailFile(path, tail.Config{Follow: true, ReOpen: true})
+	if err != nil {
+		log.Fatalf("tail.TailFile failed: %s", err)
+	}
+
+	for line := range t.Lines {
+		match := exp.FindStringSubmatch(line.Text)
+
+		if len(match) == 0 {
+			continue
+		}
+
+		result := make(map[string]string)
+
+		for i, name := range exp.SubexpNames() {
+			if i != 0 && name != "" {
+				result[name] = match[i]
+			}
+		}
+
+		s, err := strconv.ParseFloat(result["size"], 64)
+		if err != nil {
+			continue
+		}
+		m.size.Add(s)
+
+		m.requests.With(prometheus.Labels{"method": result["method"], "status_code": result["status_code"], "path": normalizeURL(result["path"])}).Add(1)
+
+		u, err := strconv.ParseFloat(result["urt"], 64)
+		if err != nil {
+			continue
+		}
+		m.duration.With(prometheus.Labels{"method": result["method"], "status_code": result["status_code"], "path": normalizeURL(result["path"])}).Observe(u)
+	}
 }
 
 func main() {
@@ -100,37 +148,5 @@ func main() {
 	log.Printf("starting nginx exporter on %q/metrics", port)
 	if err := http.ListenAndServe(port, mux); err != nil {
 		log.Fatalf("cannot start nginx exporter: %s", err)
-	}
-}
-
-func tailAccessLogFile(m *metrics, path string) {
-	t, err := tail.TailFile(path, tail.Config{Follow: true, ReOpen: true})
-	if err != nil {
-		log.Fatalf("tail.TailFile failed: %s", err)
-	}
-
-	for line := range t.Lines {
-		match := exp.FindStringSubmatch(line.Text)
-		result := make(map[string]string)
-
-		for i, name := range exp.SubexpNames() {
-			if i != 0 && name != "" {
-				result[name] = match[i]
-			}
-		}
-
-		s, err := strconv.ParseFloat(result["size"], 64)
-		if err != nil {
-			continue
-		}
-		m.size.Add(s)
-
-		m.requests.With(prometheus.Labels{"method": result["method"], "status_code": result["status_code"], "path": result["path"]}).Add(1)
-
-		u, err := strconv.ParseFloat(result["urt"], 64)
-		if err != nil {
-			continue
-		}
-		m.duration.With(prometheus.Labels{"method": result["method"], "status_code": result["status_code"], "path": result["path"]}).Observe(u)
 	}
 }
