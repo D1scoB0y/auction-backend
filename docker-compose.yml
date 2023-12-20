@@ -49,6 +49,8 @@ services:
       test: pg_isready
       interval: 3s
       timeout: 6s
+    ports:
+      - 5432:5432
     expose:
       - 5432
     volumes:
