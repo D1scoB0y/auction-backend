@@ -12,6 +12,8 @@ class Config(BaseSettings):
 
     DB_URL: str
 
+    CLIENT_APP_URL: str
+
     REDIS_URL: str
 
     MAIL_SENDER: str
