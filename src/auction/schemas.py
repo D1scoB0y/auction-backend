@@ -92,6 +92,7 @@ class ReadLot(BaseModel):
     end_date: str = Field(alias='endDate')
     time_to_end: float = Field(alias='timeToEnd')
     images: list[str]
+    is_in_favorites: bool = Field(alias='isInFavorites')
 
     @staticmethod
     def from_lot(lot: dict):

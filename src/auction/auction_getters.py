@@ -10,11 +10,31 @@ import src.user.models as _user_models
 
 
 async def get_lot_by_id(
+    user: _user_models.User | None,
     lot_id: int,
     session: AsyncSession,
 ) -> Optional[dict]:
-    stmt = text('select * from lots where lot_id = :lot_id')
-    lot = await session.execute(stmt, params={'lot_id': lot_id})
+    if user is None:
+        stmt = text('''
+            select *,
+                false as is_in_favorites
+            from lots
+            where lot_id = :lot_id
+        ''')
+        lot = await session.execute(stmt, params={'lot_id': lot_id})
+    else:
+        stmt = text('''
+            select *,
+                exists(
+                    select fl.record_id
+                    from favorite_lots fl
+                    where fl.user_id = :user_id and fl.lot_id = l.lot_id
+                ) as is_in_favorites
+            from lots l
+            where l.lot_id = :lot_id
+        ''')
+        lot = await session.execute(stmt, params={'lot_id': lot_id, 'user_id': user.user_id})
+
     lot = lot.first()
 
     if lot is None:
@@ -96,20 +116,26 @@ async def get_active_lots_qty(
 
 
 async def get_archived_lots(
+    user_id: int,
     session: AsyncSession,
 ):
     stmt = text('''
-        select lot_id,
-            title,
-            end_date,
-            current_bid,
-            status,
-            images[1] as image
-        from lots
+        select l.lot_id,
+            l.title,
+            l.end_date,
+            l.current_bid,
+            l.status,
+            l.images[1] as image,
+            exists(
+                select fl.record_id
+                from favorite_lots fl
+                where fl.user_id = :user_id and fl.lot_id = l.lot_id
+            ) as is_in_favorites
+        from lots l
         where status = 'archived'
     ''')
 
-    lots = await session.execute(stmt)
+    lots = await session.execute(stmt, params={'user_id': user_id})
 
     res = list(map(lambda x: x._asdict(), lots))
 

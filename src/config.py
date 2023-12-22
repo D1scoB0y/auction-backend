@@ -14,8 +14,6 @@ class Config(BaseSettings):
 
     REDIS_URL: str
 
-    CLIENT_APP_URL: str
-
     MAIL_SENDER: str
     MAIL_PASSWORD: str
 

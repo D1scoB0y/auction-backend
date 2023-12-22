@@ -43,7 +43,7 @@ async def add_to_favorites(
     user: _user_models.User,
     session: AsyncSession,
 ):
-    lot = await _auction_getters.get_lot_by_id(lot_id, session)
+    lot = await _auction_getters.get_lot_by_id(user, lot_id, session)
 
     if lot is None:
         raise _auction_exception.LotNotFoundError('Lot with this id does not exist.')
@@ -93,9 +93,10 @@ async def archive_lot(
 
 async def fetch_lot(
     lot_id: int,
+    user: _user_models.User | None,
     session: AsyncSession,
 ):
-    lot = await _auction_getters.get_lot_by_id(lot_id, session)
+    lot = await _auction_getters.get_lot_by_id(user, lot_id, session)
 
     if lot is None:
         raise _auction_exception.LotNotFoundError('Lot with this id does not exist.')
@@ -164,7 +165,7 @@ async def place_bid(
             'Only users with verified phone number can place bids.',
         )
 
-    lot = await _auction_getters.get_lot_by_id(bid_data.lot_id, session)
+    lot = await _auction_getters.get_lot_by_id(user, bid_data.lot_id, session)
 
     orm_lot = await session.get(_auction_models.Lot, bid_data.lot_id)
 
@@ -304,7 +305,7 @@ async def fetch_archived_lots(
             'Only sellers can get ended lot with bids',
         )
 
-    lots = await _auction_getters.get_archived_lots(session)
+    lots = await _auction_getters.get_archived_lots(user.user_id, session)
     lots_qty = await _auction_getters.get_archived_lots_qty(session)
 
     limit = 18

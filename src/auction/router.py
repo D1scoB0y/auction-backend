@@ -68,9 +68,13 @@ async def archive_lot(
     tags=['Lots'],
 )
 @_utils.catch_unexpected_errors
-async def get_lot(lot_id: int, session: AsyncSession = Depends(_db.get_session)):
+async def get_lot(
+    lot_id: int,
+    user: _user_models.User = Depends(_user_utils.get_current_user_or_none),
+    session: AsyncSession = Depends(_db.get_session)
+):
     try:
-        return await _auction_service.fetch_lot(lot_id, session)
+        return await _auction_service.fetch_lot(lot_id, user, session)
     except _auction_exception.LotNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
