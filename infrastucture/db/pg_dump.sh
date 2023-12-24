@@ -1,7 +1,7 @@
 #!/bin/bash
 
 TIMESTAMP=$(date +%Y-%m-%d)
-BACKUP_DIR="/home/backend_admin/dumps"
+BACKUP_DIR="/home/backend-admin/dumps"
 DATABASE_NAME="auction_db"
 BACKUP_FILE="$BACKUP_DIR/$TIMESTAMP.sql"
 DIRECTORY_ID="11bNhBWYhXggcqvHK986DqXXqW2j5Pxaq"
