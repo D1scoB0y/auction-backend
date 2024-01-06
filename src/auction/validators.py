@@ -19,8 +19,8 @@ def validate_images(images: list[StarletteFile]) -> list[StarletteFile]:
 
         if img.size:
 
-            if img.size > (1024**2) * 4:  # 4 MB
-                raise ValueError('Max image size is 4 MB')
+            if img.size > (1024**2) * 8:  # 8 MB
+                raise ValueError('Max image size is 8 MB')
 
     return images
 
